@@ -17,7 +17,12 @@ class GameScreen extends StatelessWidget {
     final won = game.isWordGuessed;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFE0F2F1), // // Verde agua muy claro de fondo
       appBar: AppBar(
+        backgroundColor: const Color(0xFFB2DFDB), // // Verde agua medio para el AppBar
+        foregroundColor: const Color(
+          0xFF004D40,
+        ), // Texto verde oscuro para buen contraste
         title: const Text('El Juego del Ahorcado'),
         actions: [
           IconButton(
@@ -37,7 +42,7 @@ class GameScreen extends StatelessWidget {
                 child: Text('Reiniciar todo (estadísticas)'),
               ),
             ],
-          )
+          ),
         ],
       ),
       body: LayoutBuilder(
@@ -52,15 +57,34 @@ class GameScreen extends StatelessWidget {
   }
 
   Widget _buildStatsBar(GameProvider provider) {
-    return Wrap(
-      spacing: 16,
-      alignment: WrapAlignment.center,
-      children: [
-        _StatChip(label: 'Jugadas', value: provider.totalGamesPlayed.toString(), icon: Icons.analytics_outlined),
-        _StatChip(label: 'Ganadas', value: provider.gamesWon.toString(), icon: Icons.emoji_events_outlined),
-        _StatChip(label: 'Perdidas', value: provider.gamesLost.toString(), icon: Icons.sentiment_dissatisfied),
-        _StatChip(label: 'Errores', value: provider.game.incorrectGuesses.toString(), icon: Icons.warning_amber_rounded),
-      ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _StatChip(
+            label: 'Jugadas',
+            value: provider.totalGamesPlayed.toString(),
+            icon: Icons.analytics_outlined,
+          ),
+          _StatChip(
+            label: 'Ganadas',
+            value: provider.gamesWon.toString(),
+            icon: Icons.emoji_events_outlined,
+          ),
+          _StatChip(
+            label: 'Perdidas',
+            value: provider.gamesLost.toString(),
+            icon: Icons.sentiment_dissatisfied,
+          ),
+          _StatChip(
+            label: 'Errores',
+            value: provider.game.incorrectGuesses.toString(),
+            icon: Icons.warning_amber_rounded,
+          ),
+        ],
+      ),
     );
   }
 
@@ -72,17 +96,28 @@ class GameScreen extends StatelessWidget {
         const SizedBox(height: 12),
         AnimatedOpacity(
           opacity: provider.game.isGameOver ? 1 : 0.4,
-            duration: const Duration(milliseconds: 400),
+          duration: const Duration(milliseconds: 400),
           child: Text(
-            provider.game.isGameOver ? provider.game.secretWord.toUpperCase() : 'Adivina la palabra',
-            style: const TextStyle(letterSpacing: 3, fontSize: 16, fontWeight: FontWeight.w500),
+            provider.game.isGameOver
+                ? provider.game.secretWord.toUpperCase()
+                : 'Adivina la palabra',
+            style: const TextStyle(
+              letterSpacing: 3,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildKeyboardOrResult(BuildContext context, GameProvider provider, bool isGameOver, bool won) {
+  Widget _buildKeyboardOrResult(
+    BuildContext context,
+    GameProvider provider,
+    bool isGameOver,
+    bool won,
+  ) {
     if (isGameOver) {
       return _GameResult(
         won: won,
@@ -98,7 +133,12 @@ class GameScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildVerticalLayout(BuildContext context, GameProvider provider, bool isGameOver, bool won) {
+  Widget _buildVerticalLayout(
+    BuildContext context,
+    GameProvider provider,
+    bool isGameOver,
+    bool won,
+  ) {
     return Column(
       children: [
         const SizedBox(height: 8),
@@ -126,31 +166,48 @@ class GameScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWideLayout(BuildContext context, GameProvider provider, bool isGameOver, bool won) {
-    return Row(
+  Widget _buildWideLayout(
+    BuildContext context,
+    GameProvider provider,
+    bool isGameOver,
+    bool won,
+  ) {
+    return Column(
       children: [
+        // Estadísticas en toda la pantalla
+        const SizedBox(height: 12),
+        _buildStatsBar(provider),
+        const SizedBox(height: 8),
+        // Contenido principal en dos columnas
         Expanded(
-          flex: 3,
-          child: Column(
+          child: Row(
             children: [
-              const SizedBox(height: 12),
-              _buildStatsBar(provider),
               Expanded(
-                child: Center(
-                  child: HangmanImage(incorrectGuesses: provider.game.incorrectGuesses),
+                flex: 3,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    HangmanImage(
+                      incorrectGuesses: provider.game.incorrectGuesses,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildWordSection(provider),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              _buildWordSection(provider),
-              const SizedBox(height: 16),
+              Expanded(
+                flex: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: _buildKeyboardOrResult(
+                    context,
+                    provider,
+                    isGameOver,
+                    won,
+                  ),
+                ),
+              ),
             ],
-          ),
-        ),
-        Expanded(
-          flex: 4,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: _buildKeyboardOrResult(context, provider, isGameOver, won),
           ),
         ),
       ],
@@ -162,13 +219,20 @@ class _StatChip extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
-  const _StatChip({required this.label, required this.value, required this.icon});
+  const _StatChip({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
     return Chip(
-      avatar: CircleAvatar(backgroundColor: color.withValues(alpha: .15), child: Icon(icon, size: 16, color: color)),
+      avatar: CircleAvatar(
+        backgroundColor: color.withValues(alpha: .15),
+        child: Icon(icon, size: 16, color: color),
+      ),
       label: Text('$label: $value'),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     );
@@ -179,7 +243,11 @@ class _GameResult extends StatelessWidget {
   final bool won;
   final String secretWord;
   final VoidCallback onPlayAgain;
-  const _GameResult({required this.won, required this.secretWord, required this.onPlayAgain});
+  const _GameResult({
+    required this.won,
+    required this.secretWord,
+    required this.onPlayAgain,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +257,8 @@ class _GameResult extends StatelessWidget {
       children: [
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 450),
-          transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+          transitionBuilder: (child, anim) =>
+              ScaleTransition(scale: anim, child: child),
           child: Text(
             won ? '¡GANASTE! 🎉' : 'DERROTA 😢',
             key: ValueKey(won),
@@ -202,13 +271,16 @@ class _GameResult extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Text('Palabra: $secretWord', style: const TextStyle(fontSize: 18, letterSpacing: 2)),
+        Text(
+          'Palabra: $secretWord',
+          style: const TextStyle(fontSize: 18, letterSpacing: 2),
+        ),
         const SizedBox(height: 20),
         FilledButton.icon(
           onPressed: onPlayAgain,
           icon: const Icon(Icons.refresh),
           label: const Text('Jugar de nuevo'),
-        )
+        ),
       ],
     );
   }
