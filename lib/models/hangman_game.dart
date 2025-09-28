@@ -1,29 +1,16 @@
 // Modelo simple para el juego del Ahorcado.
+// Se encarga únicamente de la lógica: selección de palabra, registro de intentos y
+// detección de estado (ganado/perdido). 
 
 class HangmanGame {
   /// Lista de palabras posibles (todas en minúsculas).
   static const List<String> _palabras = [
-    'flutter',
-    'dart',
-    'widget',
-    'state',
-    'context',
-    'provider',
-    'inherited',
-    'async',
-    'future',
-    'stream',
-    'navigator',
-    'scaffold',
-    'appbar',
-    'column',
-    'row',
-    'container',
-    'padding',
-    'margin',
-    'alignment',
-    'textfield',
-    'button',
+    'manzana',
+    'banana',
+    'naranja',
+    'pera',
+    'uva',
+    'sandia',
   ];
 
   /// Palabra secreta de la partida actual.
@@ -38,6 +25,9 @@ class HangmanGame {
   /// Máximo de errores permitidos antes de perder la partida.
   static const int maxIncorrectGuesses = 6;
 
+  /// Getter público para el máximo de errores permitidos (útil en la UI).
+  int get maxErrors => maxIncorrectGuesses;
+
 
   /// Constructor: inicia automáticamente una nueva partida.
   HangmanGame(){
@@ -45,13 +35,31 @@ class HangmanGame {
   }
 
   /// Reinicia todos los valores internos para comenzar una nueva ronda.
-  /// La selección de palabra usa el milisegundo actual para pseudo-"aleatoriedad".
+  /// Usa un índice pseudo-aleatorio basado en DateTime. (Se podría mejorar usando Random()).
   void _startNewGame(){
-    _secretWord = _palabras[
-      _palabras.length.ceil() * (DateTime.now().millisecond/1000)~/ 1 % _palabras.length
-    ];
+    final millis = DateTime.now().millisecondsSinceEpoch;
+    final index = millis % _palabras.length;
+    _secretWord = _palabras[index];
     _guessedLetters = {};
     _incorrectGuesses = 0;
+  }
+
+  /// Permite reiniciar desde fuera (UI / Provider).
+  void restart() => _startNewGame();
+
+  /// Procesa una letra ingresada. Devuelve true si la letra estaba en la palabra.
+  /// - Normaliza a minúsculas.
+  /// - No penaliza repetir la misma letra.
+  bool guessLetter(String letter) {
+    if (letter.isEmpty || isGameOver) return false;
+    final normalized = letter[0].toLowerCase();
+    final already = _guessedLetters.contains(normalized);
+    if (already) return _secretWord.contains(normalized);
+
+    _guessedLetters.add(normalized);
+    final correct = _secretWord.contains(normalized);
+    if (!correct) _incorrectGuesses++;
+    return correct;
   }
 
   /// Devuelve la palabra secreta (normalmente no se muestra hasta terminar).
@@ -64,20 +72,21 @@ class HangmanGame {
   bool get isGameOver => _incorrectGuesses >= maxIncorrectGuesses || isWordGuessed;
 
   /// Indica si todas las letras han sido adivinadas.
-  bool get isWordGuessed => getCurrentGuess().replaceAll(' ', '') == _secretWord;
-
-  /// Devuelve la representación parcial (letras adivinadas y '_' para pendientes).
-  String getCurrentGuess(){
-    String display = '';
-    for (var letter in _secretWord.runes) {
-      final char = String.fromCharCode(letter);
-      if (_guessedLetters.contains(char)) {
-        display += char;
-      } else {
-        display += '_';
-      }
+  bool get isWordGuessed {
+    for (final c in _secretWord.split('')) {
+      if (!_guessedLetters.contains(c)) return false;
     }
-    return display.trim();
+    return true;
+  }
+
+  /// Devuelve la representación parcial (letras correctas y '_' para pendientes)
+  /// separadas por espacios para una visualización más clara.
+  String getCurrentGuess(){
+    final buffer = <String>[];
+    for (final ch in _secretWord.split('')) {
+      buffer.add(_guessedLetters.contains(ch) ? ch.toUpperCase() : '_');
+    }
+    return buffer.join(' '); // Ej: F L U T T E R o _ L U _ _ E R
   }
 
   /// Devuelve el conjunto de letras intentadas hasta ahora.
