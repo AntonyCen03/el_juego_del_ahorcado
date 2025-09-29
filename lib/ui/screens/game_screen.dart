@@ -48,24 +48,30 @@ class GameScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 700;
-          return isWide
-              ? _buildWideLayout(context, gameProvider, isGameOver, won)
-              : _buildVerticalLayout(context, gameProvider, isGameOver, won);
-        },
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth > 700;
+            return isWide
+                ? _buildWideLayout(context, gameProvider, isGameOver, won)
+                : _buildVerticalLayout(
+                    context,
+                    gameProvider,
+                    isGameOver,
+                    won,
+                    constraints: constraints,
+                  );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildStatsBar(GameProvider provider) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
+    return LayoutBuilder(
+      builder: (context, c) {
+        final narrow = c.maxWidth < 430; 
+        final children = [
           _StatChip(
             label: 'Jugadas',
             value: provider.totalGamesPlayed.toString(),
@@ -86,16 +92,40 @@ class GameScreen extends StatelessWidget {
             value: provider.game.incorrectGuesses.toString(),
             icon: Icons.warning_amber_rounded,
           ),
-        ],
-      ),
+        ];
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            horizontal: narrow ? 12 : 40,
+            vertical: 4,
+          ),
+          child: narrow
+              ? Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: children,
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: children,
+                ),
+        );
+      },
     );
   }
 
   Widget _buildWordSection(GameProvider provider) {
+    final guess = provider.game.getCurrentGuess();
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        WordDisplay(currentGuess: provider.game.getCurrentGuess()),
+        // Evita overflow horizontal en teléfonos pequeños
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: WordDisplay(currentGuess: guess),
+        ),
         const SizedBox(height: 12),
         AnimatedOpacity(
           opacity: provider.game.isGameOver ? 1 : 0.4,
@@ -103,11 +133,12 @@ class GameScreen extends StatelessWidget {
           child: Text(
             provider.game.isGameOver
                 ? provider.game.secretWord.toUpperCase()
-                : provider.game.currentHint, // Mostrar pista
-            style: const TextStyle(
-              letterSpacing: 3,
+                : provider.game.currentHint,
+            style: TextStyle(
+              letterSpacing: guess.length > 18 ? 1.5 : 3,
               fontSize: 16,
               fontWeight: FontWeight.w500,
+              color: Colors.teal.shade700,
             ),
           ),
         ),
@@ -140,28 +171,36 @@ class GameScreen extends StatelessWidget {
     BuildContext context,
     GameProvider provider,
     bool isGameOver,
-    bool won,
-  ) {
+    bool won, {
+    BoxConstraints? constraints,
+  }) {
+    final h = constraints?.maxHeight ?? MediaQuery.of(context).size.height;
+    final short = h < 630; 
+    final imageSide = (short ? h * 0.22 : h * 0.28).clamp(140, 240).toDouble();
     return Column(
       children: [
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         _buildStatsBar(provider),
         Expanded(
-          flex: 3,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                HangmanImage(incorrectGuesses: provider.game.incorrectGuesses),
-                const SizedBox(height: 8),
-                _buildWordSection(provider),
-              ],
-            ),
+          flex: short ? 4 : 3,
+          child: Column(
+            children: [
+              SizedBox(
+                height: imageSide,
+                width: imageSide,
+                child: HangmanImage(
+                  incorrectGuesses: provider.game.incorrectGuesses,
+                ),
+              ),
+              const SizedBox(height: 6),
+              _buildWordSection(provider),
+            ],
           ),
         ),
         Expanded(
           flex: 4,
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: EdgeInsets.fromLTRB(8, short ? 0 : 8, 8, short ? 4 : 12),
             child: _buildKeyboardOrResult(context, provider, isGameOver, won),
           ),
         ),
@@ -255,6 +294,14 @@ class _GameResult extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = won ? Colors.green : Colors.red;
+    final size = MediaQuery.of(context).size;
+    final shortest = size.shortestSide; // base responsiva
+    final titleFont = shortest < 340
+        ? 20.0
+        : shortest < 390
+        ? 22.0
+        : 24.0; // <=24 (menor que 26)
+    final wordFont = (titleFont - 4).clamp(14.0, 20.0);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -266,7 +313,7 @@ class _GameResult extends StatelessWidget {
             won ? '¡GANASTE! 🎉' : 'DERROTA 😢',
             key: ValueKey(won),
             style: TextStyle(
-              fontSize: 34,
+              fontSize: titleFont,
               fontWeight: FontWeight.bold,
               color: color,
               letterSpacing: 1.5,
@@ -276,7 +323,7 @@ class _GameResult extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           'Palabra: $secretWord',
-          style: const TextStyle(fontSize: 18, letterSpacing: 2),
+          style: TextStyle(fontSize: wordFont, letterSpacing: 1.5),
         ),
         const SizedBox(height: 20),
         FilledButton.icon(
@@ -297,29 +344,44 @@ class HangmanImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Asegura que el índice esté entre 0 y 6
     final index = incorrectGuesses.clamp(0, 6);
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Image.asset(
-        'assets/images/hangman_$index.png',
-        height: 250,
-        width: 250,
-        fit: BoxFit.contain,
-        // Si la imagen no existe, muestra un texto
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            height: 250,
-            width: 250,
-            alignment: Alignment.center,
-            child: Text(
-              'Imagen $index no encontrada',
-              style: const TextStyle(fontSize: 16),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.of(context).size.width;
+        final h = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : MediaQuery.of(context).size.height;
+        final shortest = w < h ? w : h;
+        double side = shortest * 0.4; 
+        side = side.clamp(140, 300); 
+        return Padding(
+          padding: const EdgeInsets.all(12),
+          child: Center(
+            child: SizedBox(
+              height: side,
+              width: side,
+              child: Image.asset(
+                'assets/images/hangman_$index.png',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Imagen $index\n(no encontrada)',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                ),
+              ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
