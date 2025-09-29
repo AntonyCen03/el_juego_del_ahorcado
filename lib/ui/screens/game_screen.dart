@@ -17,9 +17,13 @@ class GameScreen extends StatelessWidget {
     final won = game.isWordGuessed;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE0F2F1), // // Verde agua muy claro de fondo
+      backgroundColor: const Color(
+        0xFFE0F2F1,
+      ), // // Verde agua muy claro de fondo
       appBar: AppBar(
-        backgroundColor: const Color(0xFFB2DFDB), // // Verde agua medio para el AppBar
+        backgroundColor: const Color(
+          0xFFB2DFDB,
+        ), // // Verde agua medio para el AppBar
         foregroundColor: const Color(
           0xFF004D40,
         ), // Texto verde oscuro para buen contraste
@@ -100,7 +104,7 @@ class GameScreen extends StatelessWidget {
           child: Text(
             provider.game.isGameOver
                 ? provider.game.secretWord.toUpperCase()
-                : 'Adivina la palabra',
+                : provider.game.currentHint, // Mostrar pista
             style: const TextStyle(
               letterSpacing: 3,
               fontSize: 16,
@@ -285,3 +289,4 @@ class _GameResult extends StatelessWidget {
     );
   }
 }
+

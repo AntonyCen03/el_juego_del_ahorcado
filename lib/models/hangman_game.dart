@@ -1,17 +1,20 @@
 // Modelo simple para el juego del Ahorcado.
 // Se encarga únicamente de la lógica: selección de palabra, registro de intentos y
-// detección de estado (ganado/perdido). 
+// detección de estado (ganado/perdido).
 
 class HangmanGame {
+  /// Lista de palabras posibles con sus respectivas pistas.
+  static const Map<String, String> _palabrasConPistas = {
+    'manzana': 'Fruta roja',
+    'banana': 'Fruta alargada',
+    'naranja': 'Fruta cítrica',
+    'pera': 'Fruta verde',
+    'uva': 'Fruta morada',
+    'sandia': 'Fruta gigante',
+  };
+
   /// Lista de palabras posibles (todas en minúsculas).
-  static const List<String> _palabras = [
-    'manzana',
-    'banana',
-    'naranja',
-    'pera',
-    'uva',
-    'sandia',
-  ];
+  static List<String> get _palabras => _palabrasConPistas.keys.toList();
 
   /// Palabra secreta de la partida actual.
   String _secretWord = '';
@@ -28,15 +31,14 @@ class HangmanGame {
   /// Getter público para el máximo de errores permitidos (útil en la UI).
   int get maxErrors => maxIncorrectGuesses;
 
-
   /// Constructor: inicia automáticamente una nueva partida.
-  HangmanGame(){
+  HangmanGame() {
     _startNewGame();
   }
 
   /// Reinicia todos los valores internos para comenzar una nueva ronda.
   /// Usa un índice pseudo-aleatorio basado en DateTime. (Se podría mejorar usando Random()).
-  void _startNewGame(){
+  void _startNewGame() {
     final millis = DateTime.now().millisecondsSinceEpoch;
     final index = millis % _palabras.length;
     _secretWord = _palabras[index];
@@ -65,11 +67,16 @@ class HangmanGame {
   /// Devuelve la palabra secreta (normalmente no se muestra hasta terminar).
   String get secretWord => _secretWord;
 
+  /// Devuelve la pista de la palabra actual.
+  String get currentHint =>
+      _palabrasConPistas[_secretWord] ?? 'Sin pista disponible';
+
   /// Cantidad de errores cometidos.
   int get incorrectGuesses => _incorrectGuesses;
 
   /// Indica si la partida terminó (ya sea por ganar o por exceder el límite de errores).
-  bool get isGameOver => _incorrectGuesses >= maxIncorrectGuesses || isWordGuessed;
+  bool get isGameOver =>
+      _incorrectGuesses >= maxIncorrectGuesses || isWordGuessed;
 
   /// Indica si todas las letras han sido adivinadas.
   bool get isWordGuessed {
@@ -81,7 +88,7 @@ class HangmanGame {
 
   /// Devuelve la representación parcial (letras correctas y '_' para pendientes)
   /// separadas por espacios para una visualización más clara.
-  String getCurrentGuess(){
+  String getCurrentGuess() {
     final buffer = <String>[];
     for (final ch in _secretWord.split('')) {
       buffer.add(_guessedLetters.contains(ch) ? ch.toUpperCase() : '_');
