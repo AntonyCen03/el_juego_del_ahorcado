@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:el_juego_del_ahorcado/providers/game_provider.dart';
-import 'package:el_juego_del_ahorcado/ui/widgets/hangman_image.dart';
 import 'package:el_juego_del_ahorcado/ui/widgets/word_display.dart';
 import 'package:el_juego_del_ahorcado/ui/widgets/keyboard.dart';
 
@@ -290,3 +289,37 @@ class _GameResult extends StatelessWidget {
   }
 }
 
+/// Widget que muestra las imágenes del ahorcado
+class HangmanImage extends StatelessWidget {
+  final int incorrectGuesses;
+
+  const HangmanImage({super.key, required this.incorrectGuesses});
+
+  @override
+  Widget build(BuildContext context) {
+    // Asegura que el índice esté entre 0 y 6
+    final index = incorrectGuesses.clamp(0, 6);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Image.asset(
+        'assets/images/hangman_$index.png',
+        height: 250,
+        width: 250,
+        fit: BoxFit.contain,
+        // Si la imagen no existe, muestra un texto
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            height: 250,
+            width: 250,
+            alignment: Alignment.center,
+            child: Text(
+              'Imagen $index no encontrada',
+              style: const TextStyle(fontSize: 16),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
